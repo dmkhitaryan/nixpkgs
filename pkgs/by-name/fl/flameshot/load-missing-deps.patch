@@ -1,0 +1,55 @@
+--- a/CMakeLists.txt	2025-08-12 16:34:27
++++ b/CMakeLists.txt	2025-08-12 16:45:38
+@@ -46,24 +46,9 @@
+ #Needed due to linker error with QtColorWidget
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ 
+-FetchContent_Declare(
+-    qtColorWidgets
+-    GIT_REPOSITORY https://gitlab.com/mattbas/Qt-Color-Widgets.git
+-    GIT_TAG 352bc8f99bf2174d5724ee70623427aa31ddc26a
+-)
++find_package(QtColorWidgets REQUIRED)
+ 
+-#Workaround for duplicate GUID in windows WIX installer
+-if (WIN32)
+-    FetchContent_GetProperties(qtColorWidgets)
+-    if(NOT qtcolorwidgets_POPULATED)
+-        FetchContent_Populate(qtColorWidgets)
+-        add_subdirectory(${qtcolorwidgets_SOURCE_DIR} ${qtcolorwidgets_BINARY_DIR} EXCLUDE_FROM_ALL)
+-    endif()
+-else()
+-    FetchContent_MakeAvailable(qtColorWidgets)
+-endif()
+ 
+-
+ # This can be read from ${PROJECT_NAME} after project() is called
+ if (APPLE)
+   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum OS X deployment version")
+@@ -129,24 +114,14 @@
+   set(KDSingleApplication_EXAMPLES OFF CACHE BOOL "Don't build the examples")
+   set(KDSingleApplication_STATIC ON CACHE BOOL "Build static versions of the libraries")
+ 
+-  FetchContent_Declare(
+-      kdsingleApplication
+-      GIT_REPOSITORY https://github.com/KDAB/KDSingleApplication.git
+-      GIT_TAG v1.2.0
+-  )
+-  FetchContent_MakeAvailable(KDSingleApplication)
++  find_package(KDSingleApplication-qt6 REQUIRED)
+ endif()
+ 
+ # ToDo: Check if this is used anywhere
+ option(BUILD_STATIC_LIBS ON)
+ 
+ if (APPLE)
+-  FetchContent_Declare(
+-      qHotKey
+-      GIT_REPOSITORY https://github.com/flameshot-org/QHotkey
+-      GIT_TAG master
+-  )
+-  FetchContent_MakeAvailable(QHotKey)
++  find_package(QHotKey REQUIRED)
+ endif()
+ 
+ add_subdirectory(src)
