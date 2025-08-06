@@ -6,39 +6,32 @@
   cmake,
   imagemagick,
   libicns,
-  libsForQt5,
+  kdePackages,
   grim,
   makeBinaryWrapper,
+  kdsingleapplication,
   nix-update-script,
   enableWlrSupport ? false,
   enableMonochromeIcon ? false,
 }:
 
 assert stdenv.hostPlatform.isDarwin -> (!enableWlrSupport);
-
-stdenv.mkDerivation {
+stdenv.mkDerivation (finalAttrs: {
   pname = "flameshot";
   # wlr screenshotting is currently only available on unstable version (>12.1.0)
-  version = "12.1.0-unstable-2025-05-04";
+  version = "13.0.0";
 
   src = fetchFromGitHub {
     owner = "flameshot-org";
     repo = "flameshot";
-    rev = "f4cde19c63473f8fadd448ad2056c22f0f847f34";
-    hash = "sha256-B/piB8hcZR11vnzvue/1eR+SFviTSGJoek1w4abqsek=";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-famx633wdeFVtQCg5L3JsdMLBdowYTEWNRD6hd+pMhw=";
   };
 
-  patches = [
-    # https://github.com/flameshot-org/flameshot/pull/3166
-    # fixes fractional scaling calculations on wayland
-    (fetchpatch {
-      name = "10-fix-wayland.patch";
-      url = "https://github.com/flameshot-org/flameshot/commit/5fea9144501f7024344d6f29c480b000b2dcd5a6.patch";
-      hash = "sha256-SnjVbFMDKD070vR4vGYrwLw6scZAFaQA4b+MbI+0W9E=";
-    })
-  ];
-
   cmakeFlags = [
+    "-DCMAKE_CXX_FLAGS=-I${kdsingleapplication}/include/kdsingleapplication-qt6"
+    "-DCMAKE_EXE_LINKER_FLAGS=-L${kdsingleapplication}/lib"
+    (lib.cmakeFeature "KDSingleApplication_DIR" "${kdsingleapplication}/lib/cmake/KDSingleApplication-qt6")
     (lib.cmakeBool "DISABLE_UPDATE_CHECKER" true)
     (lib.cmakeBool "USE_MONOCHROME_ICON" enableMonochromeIcon)
   ]
@@ -47,14 +40,21 @@ stdenv.mkDerivation {
     (lib.cmakeBool "USE_WAYLAND_GRIM" enableWlrSupport)
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [
-    (lib.cmakeFeature "Qt5_DIR" "${libsForQt5.qtbase.dev}/lib/cmake/Qt5")
+    (lib.cmakeFeature "Qt6_DIR" "${kdePackages.qtbase.dev}/lib/cmake/Qt6")
+  ];
+
+  # 1. Prevents the package from attempting to fetch libraries through the internet.
+  # 2. Package expects "kdsingleapplication", in Nixpkgs: "kdsingleapplication-qt6".
+  patches = [
+    ./qt-color-widgets.patch
+    ./kds-lib-link.patch
   ];
 
   nativeBuildInputs = [
     cmake
-    libsForQt5.qttools
-    libsForQt5.qtsvg
-    libsForQt5.wrapQtAppsHook
+    kdePackages.qttools
+    kdePackages.qtsvg
+    kdePackages.wrapQtAppsHook
     makeBinaryWrapper
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [
@@ -63,8 +63,10 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
-    libsForQt5.qtbase
-    libsForQt5.kguiaddons
+    kdsingleapplication
+    kdePackages.qt-color-widgets
+    kdePackages.qtbase
+    kdePackages.kguiaddons
   ];
 
   postPatch = lib.optionalString stdenv.hostPlatform.isDarwin ''
@@ -113,16 +115,16 @@ stdenv.mkDerivation {
     updateScript = nix-update-script { extraArgs = [ "--version=branch" ]; };
   };
 
-  meta = with lib; {
+  meta = {
     description = "Powerful yet simple to use screenshot software";
     homepage = "https://github.com/flameshot-org/flameshot";
     changelog = "https://github.com/flameshot-org/flameshot/releases";
     mainProgram = "flameshot";
-    maintainers = with maintainers; [
+    maintainers = with lib.maintainers; [
       scode
       oxalica
     ];
-    license = licenses.gpl3Plus;
-    platforms = platforms.linux ++ platforms.darwin;
+    license = lib.licenses.gpl3Plus;
+    platforms = lib.platforms.linux ++ lib.platforms.darwin;
   };
-}
+})
