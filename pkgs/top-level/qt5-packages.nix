@@ -257,6 +257,8 @@ makeScopeWithSplicing' {
 
         qt5ct = callPackage ../tools/misc/qt5ct { };
 
+        qt-color-widgets = callPackage ../development/libraries/qt-color-widgets { };
+
         qtdbusextended = callPackage ../development/libraries/qtdbusextended { };
 
         qtfeedback = callPackage ../development/libraries/qtfeedback { };
